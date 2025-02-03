@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Capture</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+            font-family: Arial, sans-serif;
+            color: white;
+            text-align: center;
+        }
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #video {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        #instructions {
+            margin-top: 20px;
+            font-size: 16px;
+            width: 80%;
+        }
+
+        #snap {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: transparent;
+            color: white;
+            border: none;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        #snap:hover {
+            color: lightgray;
+        }
+
+        #nameInput {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 18px;
+            color: black;
+            border-radius: 5px;
+        }
+
+        #nameLabel {
+            margin-top: 10px;
+            font-size: 18px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <!-- Name input field -->
+        <label id="nameLabel" for="nameInput">Enter Your Friend Name</label>
+        <input type="text" id="nameInput" placeholder="Type your name" />
+
+        <!-- Video feed -->
+        <video id="video" autoplay></video>
+
+        <!-- Instruction text -->
+        <div id="instructions">Take a picture of your school environment. This picture will be used to verify your location and be posted on the school dashboard.</div>
+
+        <!-- Capture button -->
+        <button id="snap">snap</button>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const snapBtn = document.getElementById('snap');
+        const nameInput = document.getElementById('nameInput');
+
+        // Function to load name from localStorage and update the input field
+        function loadName() {
+            const savedName = localStorage.getItem('userName');
+            if (savedName) {
+                nameInput.value = savedName;
+            }
+        }
+
+        // Update name in localStorage when user types in the input field
+        nameInput.addEventListener('input', function () {
+            const userName = nameInput.value.trim();
+            if (userName) {
+                localStorage.setItem('userName', userName);
+            }
+        });
+
+        // Access the camera and display the video feed
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(function (stream) {
+                video.srcObject = stream;
+            })
+            .catch(function (err) {
+                alert('Error accessing camera: ' + err.message);
+            });
+
+        // Capture image when 'snap' is clicked
+        snapBtn.addEventListener('click', function () {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvas.toDataURL('image/png');
+            const userName = localStorage.getItem('userName') || nameInput.value; // Get the name from localStorage or input field
+            const time = new Date().toLocaleString();
+
+            // Store the image, name, and time in localStorage
+            let dashboardData = JSON.parse(localStorage.getItem('dashboardData')) || [];
+            dashboardData.push({ name: userName, image: imageData, time: time });
+            localStorage.setItem('dashboardData', JSON.stringify(dashboardData));
+
+            alert(`Image captured by ${userName} at ${time}!`);
+            window.location.href = 'http://localhost:8080/Qrcodescan.html'; // Redirect to dashboard after capture
+        });
+
+        // Load the name when the page loads
+        loadName();
+    </script>
+</body>
+</html>

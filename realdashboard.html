@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced School Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7fa;
+        }
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .table-container {
+            margin: 20px 0;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        #dashboardTable img {
+            border-radius: 50px;
+            width: 20px;
+            height: 2px;
+        }
+        .early {
+            color: green;
+            font-weight: bold;
+        }
+        .late {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <h1>Advanced School Dashboard</h1>
+        <div class="container table-container">
+            <h2>Student Attendance</h2>
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Status</th>
+                        <th>Name</th>
+                        <th>Image</th>
+                        <th>Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="dashboardTableBody">
+                    <!-- Rows will be dynamically added -->
+                </tbody>
+            </table>
+            <button id="addStudentBtn" class="btn btn-primary mt-3">Add Teacher</button>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Student -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1" aria-labelledby="addStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addStudentModalLabel">Add Teacher</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="studentName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="studentName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="studentImage" class="form-label">Image URL</label>
+                        <input type="url" class="form-control" id="studentImage" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="studentTime" class="form-label">Time</label>
+                        <input type="time" class="form-control" id="studentTime" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveStudentBtn">Save Student</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const targetTime = "14:00"; // Target time for attendance
+
+        // Function to calculate status (Early or Late)
+        function calculateStatus(entryTime) {
+            const [targetHours, targetMinutes] = targetTime.split(':').map(Number);
+            const [entryHours, entryMinutes] = entryTime.split(':').map(Number);
+
+            if (entryHours > targetHours || (entryHours === targetHours && entryMinutes > targetMinutes)) {
+                return "Late";
+            } else {
+                return "Early";
+            }
+        }
+
+        // Function to load data from localStorage
+        function loadDashboardData() {
+            const dashboardData = JSON.parse(localStorage.getItem('dashboardData')) || [];
+            const tableBody = document.getElementById('dashboardTableBody');
+
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            dashboardData.forEach((data, index) => {
+                const row = document.createElement('tr');
+
+                // Determine status
+                const status = calculateStatus(data.time);
+
+                // Create table cells
+                const statusCell = document.createElement('td');
+                statusCell.textContent = status;
+                statusCell.className = status.toLowerCase();
+
+                const nameCell = document.createElement('td');
+                nameCell.textContent = data.name;
+
+                const imageCell = document.createElement('td');
+                const img = document.createElement('img');
+                img.src = data.image;
+                img.alt = 'Teacher Photo';
+                imageCell.appendChild(img);
+
+                const timeCell = document.createElement('td');
+                timeCell.textContent = data.time;
+
+                const actionCell = document.createElement('td');
+                const removeButton = document.createElement('button');
+                removeButton.className = 'btn btn-danger btn-sm';
+                removeButton.textContent = 'Remove';
+                removeButton.onclick = () => removeStudent(index);
+                actionCell.appendChild(removeButton);
+
+                // Append cells to row
+                row.appendChild(statusCell);
+                row.appendChild(nameCell);
+                row.appendChild(imageCell);
+                row.appendChild(timeCell);
+                row.appendChild(actionCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Function to save a new student
+        function saveStudent() {
+            const name = document.getElementById('studentName').value;
+            const image = document.getElementById('studentImage').value;
+            const time = document.getElementById('studentTime').value;
+
+            const newStudent = { name, image, time };
+            const dashboardData = JSON.parse(localStorage.getItem('dashboardData')) || [];
+            dashboardData.push(newStudent);
+
+            localStorage.setItem('dashboardData', JSON.stringify(dashboardData));
+
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentImage').value = '';
+            document.getElementById('studentTime').value = '';
+
+            loadDashboardData();
+        }
+
+        // Function to remove a student
+        function removeStudent(index) {
+            const dashboardData = JSON.parse(localStorage.getItem('dashboardData')) || [];
+            dashboardData.splice(index, 1);
+            localStorage.setItem('dashboardData', JSON.stringify(dashboardData));
+            loadDashboardData();
+        }
+
+        // Initialize dashboard
+        function initDashboard() {
+            loadDashboardData();
+        }
+
+        document.getElementById('addStudentBtn').addEventListener('click', () => {
+            const modal = new bootstrap.Modal(document.getElementById('addStudentModal'));
+            modal.show();
+        });
+
+        document.getElementById('saveStudentBtn').addEventListener('click', saveStudent);
+
+        window.onload = initDashboard;
+    </script>
+</body>
+</html>

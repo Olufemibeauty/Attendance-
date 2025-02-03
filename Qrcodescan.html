@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner App</title>
+    <style>
+        /* styles.css */
+body,html {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background-color: black;
+    color: black;
+}
+
+.container {
+    text-align: center;
+    background-color: black;
+    padding: 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 7, 0.2);
+}
+
+#camera {
+    width: 100%;
+    height: 700px;
+    margin-bottom: 1px;
+}
+
+#output {
+    margin-top: 20px;
+    font-size: 18px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: white;
+    border: 1px solid green;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Notification Bar Styles */
+.notification-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #323232;
+    color: white;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.notification-bar .message {
+    display: flex;
+    align-items: center;
+}
+
+.notification-bar .message i {
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+.notification-bar .close {
+    cursor: pointer;
+    font-size: 24px;
+}
+
+/* Animation Styles */
+@keyframes scanAnimation {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+.scan-animation {
+    animation: scanAnimation 1s ease-in-out infinite;
+}
+
+    </style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <video id="camera" autoplay playsinline></video>
+        <div id="output">
+            <p> <span id="result"></span></p>
+        </div>
+        <button class="startScan" id="startScanButton">Scan</button>
+
+        <!-- Notification Bar -->
+        <div class="notification-bar" id="notificationBar">
+            <div class="message">
+                <i class="material-icons notify">notifications</i>
+                <span id="notificationMessage">This is a notification message</span>
+            </div>
+            <i class="material-icons close" id="closeNotificationIcon">close</i>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script> <!-- Include jsQR library -->
+    <script>
+        // Get elements
+        const notificationBar = document.getElementById('notificationBar');
+        const closeNotificationIcon = document.getElementById('closeNotificationIcon');
+        const notificationMessage = document.getElementById('notificationMessage');
+        const resultDisplay = document.getElementById('result');
+        const video = document.getElementById('camera');
+        const startScanButton = document.getElementById('startScanButton');
+
+        // Function to show notification
+        function showNotificationBar(message) {
+            notificationMessage.textContent = message; // Set message
+            notificationBar.style.display = 'flex';    // Show notification bar
+        }
+
+        // Function to hide notification
+        function hideNotificationBar() {
+            notificationBar.style.display = 'none';   // Hide notification bar
+        }
+
+        // Event listener for closing notification
+        closeNotificationIcon.addEventListener('click', hideNotificationBar);
+
+        // Access camera
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('Error accessing camera: ', err);
+            }
+        }
+
+        // Function to scan QR Code
+        function scanQRCode() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+            const code = jsQR(imageData.data, canvas.width, canvas.height);
+            if (code) {
+                resultDisplay.textContent = code.data; // Display QR code content
+                showNotificationBar("QR Code Scanned: " + code.data);
+                video.classList.remove('scan-animation'); // Stop the animation when QR code is found
+            } else {
+                resultDisplay.textContent = "Scanning...";
+                video.classList.add('scan-animation'); // Add animation when scanning
+                showNotificationBar("Wrong QR Code");
+            }
+        }
+
+        // Event listener for scan button
+        startScanButton.addEventListener('click', () => {
+            // Wait for 3 seconds before showing notification
+            setTimeout(() => {
+                showNotificationBar("Your attendance has been marked");
+                
+                // Redirect to another page after 3 seconds
+                setTimeout(() => {
+                    window.location.href = "file:///storage/emulated/0/Android/data/com.teejay.trebedit/files/TrebEdit%20user%20files/hoMe2.html"; // Replace with your desired URL
+                }, 1000); // Wait 1 second after the notification to redirect
+            }, 3000); // 3000ms = 3 seconds
+
+            setInterval(scanQRCode, 500); // Start scanning every 500ms
+        });
+
+        // Start camera when the page loads
+        window.addEventListener('load', startCamera);
+    </script>
+</body>
+</html>
